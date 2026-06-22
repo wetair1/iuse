@@ -5,22 +5,40 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "iuse"
 version = "0.1.0"
-description = "I USE <DISTRO> BTW — flex your Linux distro or desktop in ASCII art."
+description = "\"I USE ARCH BTW\" in your terminal — ASCII-art banners for 432 distros & 72 DEs/WMs, with colors and an interactive menu."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 authors = [{ name = "wetair1" }]
-keywords = ["linux", "distro", "ascii", "art", "terminal", "fun"]
+keywords = [
+    "linux",
+    "distro",
+    "ascii",
+    "ascii-art",
+    "terminal",
+    "cli",
+    "tui",
+    "banner",
+    "unixporn",
+    "meme",
+    "desktop-environment",
+    "window-manager",
+]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Topic :: Utilities",
 ]
 dependencies = []
 
 [project.urls]
 Homepage = "https://github.com/wetair1/iuse"
 Repository = "https://github.com/wetair1/iuse"
+Issues = "https://github.com/wetair1/iuse/issues"
 
 [project.scripts]
 iuse = "iuse:main"

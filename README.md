@@ -1,25 +1,17 @@
 # iuse
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20macOS-555.svg?logo=linux&logoColor=white)](#)
-[![Dependencies](https://img.shields.io/badge/Dependencies-none-success.svg)](#)
-[![Distros](https://img.shields.io/badge/Distros-432-orange.svg)](#)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey.svg?logo=linux&logoColor=white)](#)
+[![Dependencies](https://img.shields.io/badge/dependencies-none-success.svg)](#)
+[![Distros](https://img.shields.io/badge/distros-432-orange.svg)](#)
 [![DE / WM](https://img.shields.io/badge/DE%20%2F%20WM-72-purple.svg)](#)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/wetair1/iuse/pulls)
-[![GitHub stars](https://img.shields.io/github/stars/wetair1/iuse?style=social)](https://github.com/wetair1/iuse/stargazers)
 
 > `I USE <DISTRO> BTW` — flex your Linux distro (or desktop) right in the terminal. Made for r/unixporn.
 
-**Languages:** **English** · [Русский](#-русский)
-
----
-
-## 🇬🇧 English
-
 `iuse` is a tiny, dependency-free CLI that prints a big ASCII-art banner like **`I USE ARCH BTW`** in the color of your choice. It ships with **432 distributions** and **72 desktop environments / window managers**, an interactive search menu, and automatic Russian/English localization.
 
-### ✨ Features
+## ✨ Features
 
 - 🎨 **ASCII-art banners** in three sizes (`small`, `big`, `mini`).
 - 🔍 **Interactive menu**: pick *Distro* or *DE/WM* → search → pick a color.
@@ -28,7 +20,7 @@
 - 🌍 **Auto localization** — Russian UI for `ru`/`uk` system locales, English everywhere else.
 - 🪶 **Zero dependencies** — pure Python 3 standard library.
 
-### 📥 Installation
+## 📥 Installation
 
 ```bash
 # Grab the script
@@ -43,7 +35,7 @@ mv iuse.py ~/.local/bin/iuse
 
 Requires **Python 3.8+** (the interactive menu needs the standard `curses` module, available on Linux/macOS by default).
 
-### 🚀 Usage
+## 🚀 Usage
 
 ```bash
 # Interactive menu (Distro/DE → search → color)
@@ -75,7 +67,7 @@ iuse --list-de   # all DEs and WMs
 iuse arch --no-color
 ```
 
-### ⚙️ Options
+## ⚙️ Options
 
 | Flag | Description |
 | --- | --- |
@@ -89,13 +81,13 @@ iuse arch --no-color
 | `--no-color` | Disable colored output |
 | `-h`, `--help` | Show help |
 
-### 🎨 Preset colors
+## 🎨 Preset colors
 
 `red` · `orange` · `yellow` · `green` · `lime` · `cyan` · `blue` · `navy` · `purple` · `pink` · `white` · `gray`
 
 …plus any custom `#RRGGBB` or ANSI `0–255` value.
 
-### 🌍 Localization
+## 🌍 Localization
 
 The interface language is detected automatically from your environment (`LC_ALL`, `LC_MESSAGES`, `LANG`, `LANGUAGE`):
 
@@ -104,17 +96,20 @@ The interface language is detected automatically from your environment (`LC_ALL`
 
 The banner text itself (`I USE ... BTW`) always stays in English — that's the whole point of the meme. 🙂
 
-### 🤝 Contributing
+## 🤝 Contributing
 
 Found a missing distro or DE? PRs are welcome — add it to the corresponding dictionary in `iuse.py` and open a pull request.
 
-### 📄 License
+## 📄 License
 
 MIT — do whatever you want.
 
 ---
 
-## 🇷🇺 Русский
+<details>
+<summary>🇷🇺 Русский</summary>
+
+<br>
 
 `iuse` — крошечная CLI-утилита без зависимостей, которая выводит большой ASCII-баннер вроде **`I USE ARCH BTW`** в выбранном цвете. Прямо для r/unixporn. В комплекте **432 дистрибутива** и **72 окружения рабочего стола / оконных менеджера**, интерактивное меню с поиском и автоматическая локализация (русский/английский).
 
@@ -188,12 +183,6 @@ iuse arch --no-color
 | `--no-color` | Отключить цветной вывод |
 | `-h`, `--help` | Показать справку |
 
-### 🎨 Готовые цвета
-
-`red` · `orange` · `yellow` · `green` · `lime` · `cyan` · `blue` · `navy` · `purple` · `pink` · `white` · `gray`
-
-…плюс любой свой `#RRGGBB` или ANSI `0–255`.
-
 ### 🌍 Локализация
 
 Язык интерфейса определяется автоматически по переменным окружения (`LC_ALL`, `LC_MESSAGES`, `LANG`, `LANGUAGE`):
@@ -210,3 +199,5 @@ iuse arch --no-color
 ### 📄 Лицензия
 
 MIT — делай что хочешь.
+
+</details>
