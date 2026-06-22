@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iuse"
+version = "0.1.0"
+description = "I USE <DISTRO> BTW — flex your Linux distro or desktop in ASCII art."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { file = "LICENSE" }
+authors = [{ name = "wetair1" }]
+keywords = ["linux", "distro", "ascii", "art", "terminal", "fun"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Environment :: Console",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/wetair1/iuse"
+Repository = "https://github.com/wetair1/iuse"
+
+[project.scripts]
+iuse = "iuse:main"
+
+[tool.setuptools]
+py-modules = ["iuse"]
