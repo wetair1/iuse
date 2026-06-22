@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import argparse
+import json
 import os
 import random
 import re
 import sys
 import shutil
+
+__version__ = "0.3.0"
 
 
 def detect_lang():
@@ -35,6 +38,13 @@ STR = {
         "color_hint": " \u2191\u2193 \u00b7 Enter \u2014 выбрать \u00b7 Esc \u2014 назад",
         "color_default": "По умолчанию (цвет %s)",
         "color_custom": "Свой цвет (HEX или 0\u2013255)\u2026",
+        "color_gradient": "Градиент (несколько цветов)\u2026",
+        "grad_count_title": " iuse \u2014 градиент: сколько цветов?",
+        "grad_color_title": " iuse \u2014 градиент: цвет %d/%d",
+        "grad_type_title": " iuse \u2014 тип градиента",
+        "grad_type_horizontal": "Горизонтальный (\u2192)",
+        "grad_type_vertical": "Вертикальный (\u2193)",
+        "grad_type_diagonal": "Диагональный (\u2198)",
         "prompt_hint": " Цвет: #RRGGBB, RGB, код 0\u2013255 или имя (red/blue\u2026)",
         "prompt_keys": " Enter \u2014 ок \u00b7 Esc \u2014 отмена",
         "prompt_bad": "\u2717 неверно",
@@ -48,16 +58,24 @@ STR = {
         "no_detect": "Не смог определить дистрибутив. Укажи явно: iuse.py arch",
         "curses_required": "Ошибка: нужен модуль curses (поставь python-curses или запускай с аргументами, например: iuse arch)",
         "bad_color": "Непонятный цвет \u00ab%s\u00bb. Примеры: red, 196, #ff8800",
+        "bad_gradient": "Непонятный градиент \u00ab%s\u00bb. Нужно \u22652 цветов через запятую, напр.: red,blue или #f00,#00f",
+        "exported": "Список сохранён: %s\nРедактируй этот файл и добавляй свои дистрибутивы/DE \u2014 iuse подхватит их автоматически.",
+        "load_warn": "\u26a0 не смог загрузить %s: %s",
+        "loaded_info": "Загружен пользовательский список: %s",
         "h_distro": "имя дистрибутива (см. -l)",
         "h_random": "случайный дистрибутив",
         "h_list": "показать все дистрибутивы",
         "h_color": "цвет: имя (red\u2026), код 0-255 или #RRGGBB",
+        "h_gradient": "градиент: цвета через запятую, напр. red,blue или #f00,#00f",
+        "h_gradient_type": "тип градиента: horizontal | vertical | diagonal",
         "h_banner": "размер шрифта",
         "h_de": "вывести DE/WM вместо дистрибутива: kde, gnome, hyprland, i3\u2026",
         "h_listde": "показать все DE и WM",
         "h_nocolor": "отключить цвет",
+        "h_distros": "путь к своему файлу со списком (.json или .txt)",
+        "h_export": "выгрузить список в файл (.json) и выйти (по умолчанию ~/.config/iuse/distros.json)",
         "desc": "I USE <DISTRO> BTW \u2014 флексим дистрибутивом.",
-        "epilog": "Без аргументов: меню выбора, затем меню цвета.",
+        "epilog": "Без аргументов: меню выбора, затем меню цвета (можно градиент). Список дистрибутивов хранится в distros.json \u2014 см. --export-distros.",
     },
     "en": {
         "mode_title": "iuse \u2014 what are you repping?",
@@ -72,6 +90,13 @@ STR = {
         "color_hint": " \u2191\u2193 \u00b7 Enter \u2014 select \u00b7 Esc \u2014 back",
         "color_default": "Default (%s color)",
         "color_custom": "Custom color (HEX or 0\u2013255)\u2026",
+        "color_gradient": "Gradient (multiple colors)\u2026",
+        "grad_count_title": " iuse \u2014 gradient: how many colors?",
+        "grad_color_title": " iuse \u2014 gradient: color %d/%d",
+        "grad_type_title": " iuse \u2014 gradient type",
+        "grad_type_horizontal": "Horizontal (\u2192)",
+        "grad_type_vertical": "Vertical (\u2193)",
+        "grad_type_diagonal": "Diagonal (\u2198)",
         "prompt_hint": " Color: #RRGGBB, RGB, code 0\u2013255 or name (red/blue\u2026)",
         "prompt_keys": " Enter \u2014 ok \u00b7 Esc \u2014 cancel",
         "prompt_bad": "\u2717 invalid",
@@ -85,16 +110,24 @@ STR = {
         "no_detect": "Couldn't detect the distro. Specify it: iuse.py arch",
         "curses_required": "Error: curses module required (install python-curses or run with arguments, e.g.: iuse arch)",
         "bad_color": "Unknown color \u00ab%s\u00bb. Examples: red, 196, #ff8800",
+        "bad_gradient": "Unknown gradient \u00ab%s\u00bb. Need \u22652 comma-separated colors, e.g.: red,blue or #f00,#00f",
+        "exported": "List saved: %s\nEdit this file and add your own distros/DEs \u2014 iuse will pick them up automatically.",
+        "load_warn": "\u26a0 couldn't load %s: %s",
+        "loaded_info": "Loaded custom list: %s",
         "h_distro": "distro name (see -l)",
         "h_random": "random distro",
         "h_list": "list all distributions",
         "h_color": "color: name (red\u2026), code 0-255 or #RRGGBB",
+        "h_gradient": "gradient: comma-separated colors, e.g. red,blue or #f00,#00f",
+        "h_gradient_type": "gradient type: horizontal | vertical | diagonal",
         "h_banner": "font size",
         "h_de": "print a DE/WM instead of a distro: kde, gnome, hyprland, i3\u2026",
         "h_listde": "list all DEs and WMs",
         "h_nocolor": "disable color",
+        "h_distros": "path to your own list file (.json or .txt)",
+        "h_export": "dump the list to a file (.json) and exit (default ~/.config/iuse/distros.json)",
         "desc": "I USE <DISTRO> BTW \u2014 rep your distro.",
-        "epilog": "No arguments: selection menu, then color menu.",
+        "epilog": "No arguments: selection menu, then color menu (gradient supported). The distro list lives in distros.json \u2014 see --export-distros.",
     },
 }
 
@@ -106,7 +139,7 @@ def t(key):
     return STR["en"].get(key, key)
 
 
-DISTROS = {
+BUILTIN_DISTROS = {
     "arch": ("Arch", 81),
     "artix": ("Artix", 33),
     "archbang": ("ArchBang", 81),
@@ -541,7 +574,7 @@ DISTROS = {
     "txikilinux": ("Txikilinux", 57),
 }
 
-ALIASES = {
+BUILTIN_ALIASES = {
     "archlinux": "arch",
     "arch-linux": "arch",
     "popos": "pop",
@@ -578,7 +611,7 @@ ALIASES = {
     "vanillaos": "vanilla",
 }
 
-DES = {
+BUILTIN_DES = {
     "gnome": ("GNOME", 33),
     "kde": ("KDE Plasma", 39),
     "xfce": ("Xfce", 45),
@@ -653,7 +686,7 @@ DES = {
     "compiz": ("Compiz", 39),
 }
 
-DE_ALIASES = {
+BUILTIN_DE_ALIASES = {
     "plasma": "kde",
     "kdeplasma": "kde",
     "kde5": "kde",
@@ -673,6 +706,12 @@ DE_ALIASES = {
     "miraclewm": "miracle",
     "elementaryde": "pantheon",
 }
+
+# Runtime catalogs: start from built-ins, then merge user files in load_catalogs().
+DISTROS = dict(BUILTIN_DISTROS)
+ALIASES = dict(BUILTIN_ALIASES)
+DES = dict(BUILTIN_DES)
+DE_ALIASES = dict(BUILTIN_DE_ALIASES)
 
 PALETTE = [
     ("Красный", 196),
@@ -808,11 +847,180 @@ def parse_color(s):
     return None
 
 
+def parse_gradient(s):
+    if not s:
+        return None
+    parts = [p for p in re.split(r"[,/]", s) if p.strip()]
+    stops = []
+    for p in parts:
+        c = parse_color(p)
+        if c is None:
+            return None
+        stops.append(c)
+    if len(stops) < 2:
+        return None
+    return stops
+
+
 def supports_color(force_no=False):
     if force_no or os.environ.get("NO_COLOR") is not None:
         return False
     return sys.stdout.isatty()
 
+
+# --------------------------------------------------------------------------- #
+# External catalog (distros.json / distros.txt)                               #
+# --------------------------------------------------------------------------- #
+
+_LOAD_WARNINGS = []
+_LOADED_FILES = []
+
+
+def _config_dir():
+    base = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(base, "iuse")
+
+
+def _script_dir():
+    try:
+        return os.path.dirname(os.path.abspath(__file__))
+    except NameError:
+        return os.getcwd()
+
+
+def catalog_paths():
+    """Highest priority first."""
+    paths = []
+    env = os.environ.get("IUSE_DISTROS")
+    if env:
+        paths.append(env)
+    cfg = _config_dir()
+    paths.append(os.path.join(cfg, "distros.json"))
+    paths.append(os.path.join(cfg, "distros.txt"))
+    sd = _script_dir()
+    paths.append(os.path.join(sd, "distros.json"))
+    paths.append(os.path.join(sd, "distros.txt"))
+    return paths
+
+
+def _norm_color(v):
+    if isinstance(v, bool):
+        return 81
+    if isinstance(v, int):
+        return v
+    if isinstance(v, (list, tuple)) and len(v) == 3:
+        try:
+            return (int(v[0]), int(v[1]), int(v[2]))
+        except (TypeError, ValueError):
+            return 81
+    if isinstance(v, str):
+        c = parse_color(v)
+        return c if c is not None else 81
+    return 81
+
+
+def _norm_entry(v):
+    if isinstance(v, dict):
+        return (str(v.get("name", "?")), _norm_color(v.get("color", 81)))
+    if isinstance(v, (list, tuple)) and len(v) >= 2:
+        return (str(v[0]), _norm_color(v[1]))
+    if isinstance(v, (int, str)):
+        return ("?", _norm_color(v))
+    return ("?", 81)
+
+
+def parse_txt_catalog(text):
+    """Plain-text list: `key | Display Name | color | alias1,alias2`."""
+    distros, aliases = {}, {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        parts = [p.strip() for p in line.split("|")]
+        if len(parts) < 2:
+            continue
+        key = parts[0].lower()
+        if not key:
+            continue
+        name = parts[1] or key
+        color = parts[2] if len(parts) >= 3 and parts[2] else "81"
+        distros[key] = {"name": name, "color": color}
+        if len(parts) >= 4 and parts[3]:
+            for a in parts[3].split(","):
+                a = a.strip().lower()
+                if a:
+                    aliases[a] = key
+    return {"distros": distros, "distro_aliases": aliases}
+
+
+def _merge_file(path):
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    if path.lower().endswith(".txt"):
+        data = parse_txt_catalog(text)
+    else:
+        data = json.loads(text)
+    if not isinstance(data, dict):
+        raise ValueError("top-level value must be an object")
+    for k, v in (data.get("distros") or {}).items():
+        DISTROS[k.lower()] = _norm_entry(v)
+    for a, k in (data.get("distro_aliases") or {}).items():
+        ALIASES[a.lower()] = str(k).lower()
+    for k, v in (data.get("des") or {}).items():
+        DES[k.lower()] = _norm_entry(v)
+    for a, k in (data.get("de_aliases") or {}).items():
+        DE_ALIASES[a.lower()] = str(k).lower()
+
+
+def load_catalogs(extra_path=None):
+    paths = catalog_paths()
+    if extra_path:
+        paths = [extra_path] + paths  # highest priority
+    seen = set()
+    # merge lowest priority first so higher priority overrides
+    for p in reversed(paths):
+        if not p:
+            continue
+        rp = os.path.abspath(os.path.expanduser(p))
+        if rp in seen:
+            continue
+        seen.add(rp)
+        if os.path.isfile(rp):
+            try:
+                _merge_file(rp)
+                _LOADED_FILES.append(rp)
+            except Exception as e:  # noqa: BLE001
+                _LOAD_WARNINGS.append((rp, str(e)))
+
+
+def cmd_export(path, color_enabled):
+    if not path:
+        d = _config_dir()
+        try:
+            os.makedirs(d, exist_ok=True)
+        except OSError as e:
+            print(t("load_warn") % (d, e), file=sys.stderr)
+        path = os.path.join(d, "distros.json")
+    data = {
+        "distros": {k: {"name": n, "color": c} for k, (n, c) in BUILTIN_DISTROS.items()},
+        "distro_aliases": dict(BUILTIN_ALIASES),
+        "des": {k: {"name": n, "color": c} for k, (n, c) in BUILTIN_DES.items()},
+        "de_aliases": dict(BUILTIN_DE_ALIASES),
+    }
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+    except OSError as e:
+        print(t("load_warn") % (path, e), file=sys.stderr)
+        return 1
+    print(colorize(t("exported") % path, 81, color_enabled))
+    return 0
+
+
+# --------------------------------------------------------------------------- #
+# Banner rendering                                                            #
+# --------------------------------------------------------------------------- #
 
 def _full_rows(text):
     text = text.upper()
@@ -860,8 +1068,8 @@ def _wrap_phrase(phrase, small, term_w):
     return groups
 
 
-def print_phrase(name, color, color_enabled, style):
-    phrase = "I USE %s BTW" % name.upper()
+def _build_art_groups(phrase, style):
+    """Return a list of multi-line ASCII-art strings, or None to fall back to plain."""
     term_w = shutil.get_terminal_size((80, 24)).columns
     if style != "mini":
         order = ["big", "small"] if style == "big" else ["small"]
@@ -869,13 +1077,115 @@ def print_phrase(name, color, color_enabled, style):
             small = st != "big"
             groups = _wrap_phrase(phrase, small, term_w)
             if all(banner_width(g, small) <= term_w for g in groups):
-                print()
-                for g in groups:
-                    art = render_small(g) if small else render_big(g)
-                    print(colorize(art, color, color_enabled))
-                print()
-                return
-    print(colorize(phrase, color, color_enabled))
+                return [render_small(g) if small else render_big(g) for g in groups]
+    return None
+
+
+def _stops_rgb(stops):
+    out = []
+    for s in stops:
+        if isinstance(s, tuple):
+            out.append(s)
+        else:
+            out.append(c256_to_rgb(int(s)))
+    return out
+
+
+def gradient_at(stops_rgb, pos):
+    if not stops_rgb:
+        return (255, 255, 255)
+    if len(stops_rgb) == 1:
+        return stops_rgb[0]
+    pos = 0.0 if pos < 0 else (1.0 if pos > 1 else pos)
+    seg = pos * (len(stops_rgb) - 1)
+    i = int(seg)
+    if i >= len(stops_rgb) - 1:
+        return stops_rgb[-1]
+    f = seg - i
+    a, b = stops_rgb[i], stops_rgb[i + 1]
+    return (
+        int(round(a[0] + (b[0] - a[0]) * f)),
+        int(round(a[1] + (b[1] - a[1]) * f)),
+        int(round(a[2] + (b[2] - a[2]) * f)),
+    )
+
+
+def render_gradient(art, stops, gtype, enabled):
+    if not enabled:
+        return art
+    lines = art.split("\n")
+    srgb = _stops_rgb(stops)
+    height = len(lines)
+    width = max((len(l) for l in lines), default=1)
+    out = []
+    for y, line in enumerate(lines):
+        buf, last = [], None
+        for x, ch in enumerate(line):
+            if ch == " ":
+                if last is not None:
+                    buf.append("\x1b[0m")
+                    last = None
+                buf.append(" ")
+                continue
+            if gtype == "vertical":
+                pos = y / max(1, height - 1)
+            elif gtype == "diagonal":
+                pos = (x + y) / max(1, (width - 1) + (height - 1))
+            else:
+                pos = x / max(1, width - 1)
+            col = gradient_at(srgb, pos)
+            if col != last:
+                buf.append("\x1b[38;2;%d;%d;%dm" % col)
+                last = col
+            buf.append(ch)
+        if last is not None:
+            buf.append("\x1b[0m")
+        out.append("".join(buf))
+    return "\n".join(out)
+
+
+def render_gradient_text(text, stops, gtype, enabled):
+    if not enabled:
+        return text
+    srgb = _stops_rgb(stops)
+    n = len(text)
+    buf = []
+    for i, ch in enumerate(text):
+        col = gradient_at(srgb, i / max(1, n - 1))
+        buf.append("\x1b[38;2;%d;%d;%dm" % col + ch)
+    buf.append("\x1b[0m")
+    return "".join(buf)
+
+
+def print_phrase(name, color, color_enabled, style):
+    phrase = "I USE %s BTW" % name.upper()
+    arts = _build_art_groups(phrase, style)
+    if arts is None:
+        print(colorize(phrase, color, color_enabled))
+        return
+    print()
+    for art in arts:
+        print(colorize(art, color, color_enabled))
+    print()
+
+
+def print_phrase_gradient(name, stops, gtype, color_enabled, style):
+    phrase = "I USE %s BTW" % name.upper()
+    arts = _build_art_groups(phrase, style)
+    if arts is None:
+        print(render_gradient_text(phrase, stops, gtype, color_enabled))
+        return
+    print()
+    for art in arts:
+        print(render_gradient(art, stops, gtype, color_enabled))
+    print()
+
+
+def print_banner(label, color, gradient_spec, color_enabled, style):
+    if gradient_spec:
+        print_phrase_gradient(label, gradient_spec["stops"], gradient_spec["type"], color_enabled, style)
+    else:
+        print_phrase(label, color, color_enabled, style)
 
 
 def detect_distro():
@@ -1118,11 +1428,148 @@ def pick_item(stdscr, cp, keys, catalog, mode):
             idx %= len(filt)
 
 
+def pick_from(stdscr, cp, title, hint, items, swatches=None):
+    import curses
+    curses.curs_set(0)
+    idx, top = 0, 0
+    while True:
+        stdscr.erase()
+        h, w = stdscr.getmaxyx()
+        stdscr.addnstr(0, 0, title, w - 1, curses.A_BOLD)
+        stdscr.addnstr(1, 0, hint, w - 1, curses.A_DIM)
+        rows = max(1, h - 4)
+        if idx < top:
+            top = idx
+        elif idx >= top + rows:
+            top = idx - rows + 1
+        for row, i in enumerate(range(top, min(len(items), top + rows))):
+            label = items[i][1]
+            sel = i == idx
+            marker = "\u276f " if sel else "  "
+            sw_code = swatches[i] if swatches else None
+            swatch = "\u2588\u2588\u2588 " if sw_code is not None else ""
+            attr = cp(sw_code) if sw_code is not None else curses.A_NORMAL
+            if sel:
+                attr |= curses.A_REVERSE | curses.A_BOLD
+            try:
+                stdscr.addnstr(3 + row, 0, (marker + swatch + label).ljust(w - 1), w - 1, attr)
+            except curses.error:
+                pass
+        try:
+            stdscr.addnstr(h - 1, 0, " %d/%d " % (idx + 1, len(items)), w - 1, curses.A_DIM)
+        except curses.error:
+            pass
+        stdscr.refresh()
+        try:
+            ch = stdscr.get_wch()
+        except curses.error:
+            continue
+        if isinstance(ch, str):
+            if ch in ("\n", "\r"):
+                return items[idx][0]
+            if ch == "\x1b":
+                return None
+        else:
+            if ch == curses.KEY_UP:
+                idx = (idx - 1) % len(items)
+            elif ch == curses.KEY_DOWN:
+                idx = (idx + 1) % len(items)
+            elif ch == curses.KEY_NPAGE:
+                idx = min(len(items) - 1, idx + rows)
+            elif ch == curses.KEY_PPAGE:
+                idx = max(0, idx - rows)
+
+
+def pick_one_color(stdscr, cp, title):
+    import curses
+    items = [(code, cname) for cname, code in PALETTE]
+    items.append(("__custom__", t("color_custom")))
+    swatches = [code for _, code in PALETTE] + [None]
+    curses.curs_set(0)
+    idx, top = 0, 0
+    while True:
+        stdscr.erase()
+        h, w = stdscr.getmaxyx()
+        stdscr.addnstr(0, 0, title, w - 1, curses.A_BOLD)
+        stdscr.addnstr(1, 0, t("color_hint"), w - 1, curses.A_DIM)
+        rows = max(1, h - 4)
+        if idx < top:
+            top = idx
+        elif idx >= top + rows:
+            top = idx - rows + 1
+        for row, i in enumerate(range(top, min(len(items), top + rows))):
+            code, label = items[i]
+            sel = i == idx
+            marker = "\u276f " if sel else "  "
+            has_sw = swatches[i] is not None
+            swatch = "\u2588\u2588\u2588 " if has_sw else "    "
+            attr = cp(swatches[i]) if has_sw else curses.A_NORMAL
+            if sel:
+                attr |= curses.A_REVERSE | curses.A_BOLD
+            try:
+                stdscr.addnstr(3 + row, 0, (marker + swatch + label).ljust(w - 1), w - 1, attr)
+            except curses.error:
+                pass
+        try:
+            stdscr.addnstr(h - 1, 0, " %d/%d " % (idx + 1, len(items)), w - 1, curses.A_DIM)
+        except curses.error:
+            pass
+        stdscr.refresh()
+        try:
+            ch = stdscr.get_wch()
+        except curses.error:
+            continue
+        if isinstance(ch, str):
+            if ch in ("\n", "\r"):
+                code = items[idx][0]
+                if code == "__custom__":
+                    val = prompt_custom(stdscr)
+                    curses.curs_set(0)
+                    if val is not None:
+                        return val
+                else:
+                    return code
+            elif ch == "\x1b":
+                return None
+        else:
+            if ch == curses.KEY_UP:
+                idx = (idx - 1) % len(items)
+            elif ch == curses.KEY_DOWN:
+                idx = (idx + 1) % len(items)
+
+
+def pick_gradient(stdscr, cp):
+    count = pick_from(
+        stdscr, cp, t("grad_count_title"), t("color_hint"),
+        [(n, str(n)) for n in (2, 3, 4, 5)],
+    )
+    if count is None:
+        return None
+    stops = []
+    for i in range(count):
+        col = pick_one_color(stdscr, cp, t("grad_color_title") % (i + 1, count))
+        if col is None:
+            return None
+        stops.append(col)
+    gtype = pick_from(
+        stdscr, cp, t("grad_type_title"), t("color_hint"),
+        [
+            ("horizontal", t("grad_type_horizontal")),
+            ("vertical", t("grad_type_vertical")),
+            ("diagonal", t("grad_type_diagonal")),
+        ],
+    )
+    if gtype is None:
+        return None
+    return {"gradient": stops, "type": gtype}
+
+
 def pick_color(stdscr, cp, distro):
     import curses
     name, dcolor = distro
     options = [("default", t("color_default") % name, dcolor)]
     options += [("preset", cname, code) for cname, code in PALETTE]
+    options.append(("gradient", t("color_gradient"), None))
     options.append(("custom", t("color_custom"), None))
     idx = 0
     top = 0
@@ -1162,6 +1609,11 @@ def pick_color(stdscr, cp, distro):
                     return dcolor
                 if kind == "preset":
                     return code
+                if kind == "gradient":
+                    spec = pick_gradient(stdscr, cp)
+                    curses.curs_set(0)
+                    if spec is not None:
+                        return spec
                 if kind == "custom":
                     val = prompt_custom(stdscr)
                     if val is not None:
@@ -1174,6 +1626,10 @@ def pick_color(stdscr, cp, distro):
                 idx = (idx - 1) % len(options)
             elif ch == curses.KEY_DOWN:
                 idx = (idx + 1) % len(options)
+            elif ch == curses.KEY_NPAGE:
+                idx = min(len(options) - 1, idx + rows)
+            elif ch == curses.KEY_PPAGE:
+                idx = max(0, idx - rows)
 
 
 def prompt_custom(stdscr):
@@ -1252,13 +1708,25 @@ def main(argv=None):
     parser.add_argument("-r", "--random", action="store_true", help=t("h_random"))
     parser.add_argument("-l", "--list", action="store_true", help=t("h_list"))
     parser.add_argument("-c", "--color", help=t("h_color"))
+    parser.add_argument("-g", "--gradient", help=t("h_gradient"))
+    parser.add_argument("--gradient-type", choices=["horizontal", "vertical", "diagonal"], default="horizontal", help=t("h_gradient_type"))
     parser.add_argument("-b", "--banner", choices=["small", "big", "mini"], default="small", help=t("h_banner"))
     parser.add_argument("-d", "--de", help=t("h_de"))
     parser.add_argument("--list-de", action="store_true", help=t("h_listde"))
+    parser.add_argument("--distros", help=t("h_distros"))
+    parser.add_argument("--export-distros", nargs="?", const="", metavar="PATH", help=t("h_export"))
     parser.add_argument("--no-color", action="store_true", help=t("h_nocolor"))
+    parser.add_argument("--version", action="version", version="iuse " + __version__)
     args = parser.parse_args(argv)
 
     color_enabled = supports_color(force_no=args.no_color)
+
+    if args.export_distros is not None:
+        return cmd_export(args.export_distros or None, color_enabled)
+
+    load_catalogs(args.distros)
+    for path, err in _LOAD_WARNINGS:
+        print(colorize(t("load_warn") % (path, err), 203, color_enabled), file=sys.stderr)
 
     if args.list:
         cmd_list(color_enabled)
@@ -1275,16 +1743,24 @@ def main(argv=None):
             print(colorize(t("bad_color") % args.color, 203, color_enabled), file=sys.stderr)
             return 1
 
+    cli_gradient = None
+    if args.gradient:
+        stops = parse_gradient(args.gradient)
+        if stops is None:
+            print(colorize(t("bad_gradient") % args.gradient, 203, color_enabled), file=sys.stderr)
+            return 1
+        cli_gradient = {"stops": stops, "type": args.gradient_type}
+
     if args.de is not None:
         dekey = resolve_de(args.de)
         if dekey is None:
             color = cli_color if cli_color is not None else 81
-            print_phrase(args.de, color, color_enabled, args.banner)
+            print_banner(args.de, color, cli_gradient, color_enabled, args.banner)
             print(colorize(t("not_in_base_de") % args.de, 240, color_enabled), file=sys.stderr)
             return 0
         dename, decolor = DES[dekey]
         color = cli_color if cli_color is not None else decolor
-        print_phrase(dename, color, color_enabled, args.banner)
+        print_banner(dename, color, cli_gradient, color_enabled, args.banner)
         return 0
 
     chosen_color = None
@@ -1295,7 +1771,7 @@ def main(argv=None):
         key = resolve_key(args.distro)
         if key is None:
             color = cli_color if cli_color is not None else 81
-            print_phrase(args.distro, color, color_enabled, args.banner)
+            print_banner(args.distro, color, cli_gradient, color_enabled, args.banner)
             print(colorize(t("not_in_base") % args.distro, 240, color_enabled), file=sys.stderr)
             return 0
     else:
@@ -1313,13 +1789,17 @@ def main(argv=None):
                 return 1
 
     name, dcolor = catalog[key]
-    if cli_color is not None:
+    gradient_spec = cli_gradient
+    if isinstance(chosen_color, dict):
+        gradient_spec = {"stops": chosen_color["gradient"], "type": chosen_color["type"]}
+        color = dcolor
+    elif cli_color is not None:
         color = cli_color
-    elif chosen_color is not None:
+    elif isinstance(chosen_color, (int, tuple)):
         color = chosen_color
     else:
         color = dcolor
-    print_phrase(name, color, color_enabled, args.banner)
+    print_banner(name, color, gradient_spec, color_enabled, args.banner)
     return 0
 
 
